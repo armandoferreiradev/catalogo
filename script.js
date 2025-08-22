@@ -25,6 +25,45 @@ for (let i = 1; i <= 28; i++) {
     });
 }
 
+// ===========================================
+// DEBUGGING E LOGGING
+// ===========================================
+
+/**
+ * Sistema de logging para debug
+ * @param {string} message - Mensagem a ser logada
+ * @param {string} type - Tipo do log (info, warn, error)
+ */
+function debugLog(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const prefix = `[${timestamp}] [${type.toUpperCase()}]`;
+
+    switch(type) {
+        case 'warn':
+            console.warn(`${prefix} ${message}`);
+            break;
+        case 'error':
+            console.error(`${prefix} ${message}`);
+            break;
+        default:
+            console.log(`${prefix} ${message}`);
+    }
+}
+
+/**
+ * Verifica se uma imagem existe
+ * @param {string} src - Caminho da imagem
+ * @returns {Promise<boolean>} Promise que resolve se a imagem existe
+ */
+function verificarImagem(src) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = src;
+    });
+}
+
 /**
  * Estado da aplicação - variáveis globais
  * @type {Array} carrinho - Lista de itens no carrinho
@@ -40,7 +79,7 @@ for (let i = 1; i <= 28; i++) {
  * @type {HTMLElement|null} currentSlideElement - Elemento do slide atual
  * @type {number} slideOffset - Deslocamento atual do slide durante swipe
  */
-let carrinho = JSON.parse(localStorage.getItem('carrinhoEVA')) || [];
+let carrinho = [];
 let currentSlide = 0;
 let currentProduct = null;
 let toastQueue = [];
@@ -52,6 +91,49 @@ let touchEndY = 0;
 let isSwiping = false;
 let currentSlideElement = null;
 let slideOffset = 0;
+
+// ===========================================
+// INICIALIZAÇÃO E PERSISTÊNCIA DO CARRINHO
+// ===========================================
+
+/**
+ * Inicializa o carrinho a partir do localStorage com tratamento de erros
+ */
+function inicializarCarrinho() {
+    try {
+        debugLog('Inicializando carrinho...');
+
+        const carrinhoSalvo = localStorage.getItem('carrinhoEVA');
+        debugLog(`Dados do localStorage: ${carrinhoSalvo}`);
+
+        if (carrinhoSalvo) {
+            const carrinhoParseado = JSON.parse(carrinhoSalvo);
+
+            // Validar se é um array válido
+            if (Array.isArray(carrinhoParseado)) {
+                carrinho = carrinhoParseado;
+                debugLog(`Carrinho carregado com ${carrinho.length} itens`);
+            } else {
+                debugLog('Dados do localStorage inválidos, inicializando carrinho vazio', 'warn');
+                carrinho = [];
+            }
+        } else {
+            debugLog('Nenhum dado encontrado no localStorage, inicializando carrinho vazio');
+            carrinho = [];
+        }
+
+        // Log detalhado dos itens do carrinho
+        if (carrinho.length > 0) {
+            carrinho.forEach((item, index) => {
+                debugLog(`Item ${index + 1}: ${item.nome} (ID: ${item.id})`);
+            });
+        }
+
+    } catch (error) {
+        debugLog(`Erro ao inicializar carrinho: ${error.message}`, 'error');
+        carrinho = [];
+    }
+}
 
 // ===========================================
 // SISTEMA DE NOTIFICAÇÕES TOAST
@@ -139,17 +221,29 @@ function animateButton(button) {
 // ===========================================
 
 /**
- * Renderiza o catálogo de produtos na página
+ * Renderiza o catálogo de produtos na página com tratamento de imagens inexistentes
  */
-function renderizarCatalogo() {
+async function renderizarCatalogo() {
     const catalogoDiv = document.getElementById('catalogo');
     catalogoDiv.innerHTML = '';
 
-    produtos.forEach(produto => {
+    debugLog('Renderizando catálogo...');
+
+    for (const produto of produtos) {
         const card = document.createElement('div');
         card.className = 'revista-card';
+
+        // Verificar se a imagem da capa existe
+        const imagemExiste = await verificarImagem(produto.imagemCapa);
+
+        if (!imagemExiste) {
+            debugLog(`Imagem não encontrada: ${produto.imagemCapa}`, 'warn');
+            // Usar uma imagem placeholder ou pular este produto
+            continue; // Pula produtos sem imagem
+        }
+
         card.innerHTML = `
-            <img src="${produto.imagemCapa}" alt="${produto.nome}" loading="lazy">
+            <img src="${produto.imagemCapa}" alt="${produto.nome}" loading="lazy" onerror="this.style.display='none'">
             <div class="card-info">
                 <h3>${produto.nome}</h3>
                 <div class="preco">R$ 16,90</div>
@@ -175,7 +269,9 @@ function renderizarCatalogo() {
         }
 
         catalogoDiv.appendChild(card);
-    });
+    }
+
+    debugLog('Catálogo renderizado com sucesso');
 }
 
 // ===========================================
@@ -300,18 +396,24 @@ function fecharModal() {
  * @param {number} produtoId - ID do produto a ser adicionado
  */
 function adicionarAoCarrinho(event, produtoId) {
+    debugLog(`Tentando adicionar produto ID ${produtoId} ao carrinho`);
+
     // Verifica se o produto já está no carrinho
     const produtoExistente = carrinho.find(item => item.id === produtoId);
 
     if (produtoExistente) {
         // Se já existe, mostra toast de aviso
+        debugLog(`Produto ID ${produtoId} já existe no carrinho`);
         showToast('Esta revista já está no seu carrinho!', 'warning');
         return;
     }
 
     const produto = produtos.find(p => p.id === produtoId);
     if (produto) {
+        debugLog(`Produto encontrado: ${produto.nome}`);
         carrinho.push(produto);
+        debugLog(`Produto adicionado. Carrinho agora tem ${carrinho.length} itens`);
+
         salvarCarrinho();
         atualizarBadgeCarrinho();
 
@@ -325,6 +427,8 @@ function adicionarAoCarrinho(event, produtoId) {
 
         // Show success toast
         showToast(`${produto.nome} adicionada ao carrinho!`, 'success');
+    } else {
+        debugLog(`Produto com ID ${produtoId} não encontrado!`, 'error');
     }
 }
 
@@ -343,7 +447,25 @@ function adicionarAoCarrinhoModal() {
  * Salva o estado do carrinho no localStorage
  */
 function salvarCarrinho() {
-    localStorage.setItem('carrinhoEVA', JSON.stringify(carrinho));
+    try {
+        const dadosCarrinho = JSON.stringify(carrinho);
+        debugLog(`Salvando carrinho: ${carrinho.length} itens`);
+        debugLog(`Dados a salvar: ${dadosCarrinho}`);
+
+        localStorage.setItem('carrinhoEVA', dadosCarrinho);
+
+        // Verificar se foi salvo corretamente
+        const verificacao = localStorage.getItem('carrinhoEVA');
+        debugLog(`Verificação - dados salvos: ${verificacao}`);
+
+        if (verificacao === dadosCarrinho) {
+            debugLog('Carrinho salvo com sucesso!');
+        } else {
+            debugLog('Erro: dados salvos não correspondem aos dados originais', 'error');
+        }
+    } catch (error) {
+        debugLog(`Erro ao salvar carrinho: ${error.message}`, 'error');
+    }
 }
 
 /**
@@ -626,6 +748,16 @@ function updateModalListeners() {
  * Inicializa a aplicação quando o DOM estiver carregado
  */
 document.addEventListener('DOMContentLoaded', function() {
+    debugLog('Aplicação inicializando...');
+
+    // Inicializar carrinho primeiro
+    inicializarCarrinho();
+
+    // Renderizar catálogo
     renderizarCatalogo();
+
+    // Atualizar badge do carrinho
     atualizarBadgeCarrinho();
+
+    debugLog('Aplicação inicializada com sucesso!');
 });
