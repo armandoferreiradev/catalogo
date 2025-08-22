@@ -32,12 +32,22 @@ for (let i = 1; i <= 28; i++) {
  * @type {Object|null} currentProduct - Produto sendo visualizado no modal
  * @type {Array} toastQueue - Fila de notificações toast
  * @type {boolean} isToastShowing - Controle de exibição de toasts
+ * @type {number} touchStartX - Posição X inicial do toque
+ * @type {number} touchStartY - Posição Y inicial do toque
+ * @type {number} touchEndX - Posição X final do toque
+ * @type {number} touchEndY - Posição Y final do toque
+ * @type {boolean} isSwiping - Flag para controle de swipe
  */
 let carrinho = JSON.parse(localStorage.getItem('carrinhoEVA')) || [];
 let currentSlide = 0;
 let currentProduct = null;
 let toastQueue = [];
 let isToastShowing = false;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+let isSwiping = false;
 
 // ===========================================
 // SISTEMA DE NOTIFICAÇÕES TOAST
@@ -214,6 +224,9 @@ function abrirModal(produtoOuId) {
 
     currentSlide = 0;
     document.getElementById('modal-preview').style.display = 'flex';
+
+    // Adicionar listeners para swipe após o modal ser exibido
+    updateModalListeners();
 }
 
 /**
@@ -502,6 +515,77 @@ document.addEventListener('keydown', function(e) {
         fecharCarrinho();
     }
 });
+
+/**
+ * Detecta e processa gestos de swipe no carrossel
+ */
+function handleSwipe() {
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
+    const absDiffX = Math.abs(diffX);
+    const absDiffY = Math.abs(diffY);
+
+    // Verificar se é um swipe horizontal válido (não vertical)
+    if (absDiffX > absDiffY && absDiffX > 50) {
+        if (diffX > 0) {
+            // Swipe para esquerda - próximo slide
+            nextSlide();
+        } else {
+            // Swipe para direita - slide anterior
+            prevSlide();
+        }
+    }
+}
+
+/**
+ * Adiciona event listeners para swipe no carrossel
+ */
+function addSwipeListeners() {
+    const carrossel = document.getElementById('carrossel');
+
+    if (!carrossel) return;
+
+    carrossel.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwiping = true;
+    }, { passive: true });
+
+    carrossel.addEventListener('touchmove', function(e) {
+        if (!isSwiping) return;
+        touchEndX = e.touches[0].clientX;
+        touchEndY = e.touches[0].clientY;
+
+        // Prevenir scroll da página durante swipe horizontal
+        const diffX = Math.abs(touchStartX - touchEndX);
+        const diffY = Math.abs(touchStartY - touchEndY);
+
+        if (diffX > diffY && diffX > 10) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    carrossel.addEventListener('touchend', function(e) {
+        if (isSwiping) {
+            handleSwipe();
+            isSwiping = false;
+        }
+    }, { passive: true });
+}
+
+/**
+ * Atualiza os event listeners quando o modal é aberto
+ */
+function updateModalListeners() {
+    // Remover listeners antigos se existirem
+    const oldCarrossel = document.getElementById('carrossel');
+    if (oldCarrossel) {
+        oldCarrossel.replaceWith(oldCarrossel.cloneNode(true));
+    }
+
+    // Adicionar novos listeners
+    setTimeout(addSwipeListeners, 100);
+}
 
 // ===========================================
 // INICIALIZAÇÃO DA APLICAÇÃO
