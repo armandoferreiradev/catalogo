@@ -201,11 +201,14 @@ main {
     }
 }
 
-/* Mobile: Forçar duas colunas */
+/* Mobile: Layout otimizado para telas pequenas */
 @media (max-width: 480px) {
     .catalogo {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
+        gap: 20px;
+    }
+
+    main {
+        padding: 30px 20px;
     }
 }
 
