@@ -373,10 +373,31 @@ main {
     display: none;
     width: 100%;
     height: 100%;
+    position: relative;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .carrossel-item.active {
     display: block;
+}
+
+.carrossel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #f9f9f9;
+    border-radius: 15px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carrossel-item.swipe-active {
+    transition: none;
+    transform: translateX(var(--swipe-offset, 0px));
+}
+
+.carrossel-item.swipe-active img {
+    transition: none;
+    transform: scale(0.95);
 }
 
 .carrossel-item img {

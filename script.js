@@ -37,6 +37,8 @@ for (let i = 1; i <= 28; i++) {
  * @type {number} touchEndX - Posição X final do toque
  * @type {number} touchEndY - Posição Y final do toque
  * @type {boolean} isSwiping - Flag para controle de swipe
+ * @type {HTMLElement|null} currentSlideElement - Elemento do slide atual
+ * @type {number} slideOffset - Deslocamento atual do slide durante swipe
  */
 let carrinho = JSON.parse(localStorage.getItem('carrinhoEVA')) || [];
 let currentSlide = 0;
@@ -48,6 +50,8 @@ let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
 let isSwiping = false;
+let currentSlideElement = null;
+let slideOffset = 0;
 
 // ===========================================
 // SISTEMA DE NOTIFICAÇÕES TOAST
@@ -257,14 +261,21 @@ function goToSlide(index) {
 }
 
 /**
- * Atualiza a exibição do carrossel
+ * Atualiza a exibição do carrossel com transições suaves
  */
 function updateCarrossel() {
     const slides = document.querySelectorAll('.carrossel-item');
     const indicators = document.querySelectorAll('.indicator');
 
     slides.forEach((slide, index) => {
-        slide.classList.toggle('active', index === currentSlide);
+        if (index === currentSlide) {
+            // Adicionar classe active com um pequeno delay para transição suave
+            setTimeout(() => {
+                slide.classList.add('active');
+            }, 50);
+        } else {
+            slide.classList.remove('active');
+        }
     });
 
     indicators.forEach((indicator, index) => {
@@ -549,26 +560,53 @@ function addSwipeListeners() {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isSwiping = true;
+
+        // Adicionar classe para feedback visual
+        const activeSlide = carrossel.querySelector('.carrossel-item.active');
+        if (activeSlide) {
+            activeSlide.classList.add('swipe-active');
+            currentSlideElement = activeSlide;
+        }
     }, { passive: true });
 
     carrossel.addEventListener('touchmove', function(e) {
-        if (!isSwiping) return;
+        if (!isSwiping || !currentSlideElement) return;
+
         touchEndX = e.touches[0].clientX;
         touchEndY = e.touches[0].clientY;
 
-        // Prevenir scroll da página durante swipe horizontal
-        const diffX = Math.abs(touchStartX - touchEndX);
+        const diffX = touchStartX - touchEndX;
         const diffY = Math.abs(touchStartY - touchEndY);
 
-        if (diffX > diffY && diffX > 10) {
+        // Prevenir scroll da página durante swipe horizontal
+        if (Math.abs(diffX) > diffY && Math.abs(diffX) > 10) {
             e.preventDefault();
+
+            // Calcular offset para movimento visual
+            slideOffset = -diffX;
+
+            // Limitar o movimento para não ir muito longe
+            const maxOffset = 100;
+            if (Math.abs(slideOffset) > maxOffset) {
+                slideOffset = slideOffset > 0 ? maxOffset : -maxOffset;
+            }
+
+            // Aplicar transformação visual
+            currentSlideElement.style.setProperty('--swipe-offset', slideOffset + 'px');
         }
     }, { passive: false });
 
     carrossel.addEventListener('touchend', function(e) {
-        if (isSwiping) {
+        if (isSwiping && currentSlideElement) {
+            // Remover classe e resetar transformação
+            currentSlideElement.classList.remove('swipe-active');
+            currentSlideElement.style.removeProperty('--swipe-offset');
+
+            // Processar o swipe
             handleSwipe();
             isSwiping = false;
+            currentSlideElement = null;
+            slideOffset = 0;
         }
     }, { passive: true });
 }
