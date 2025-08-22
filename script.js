@@ -267,17 +267,16 @@ function updateCarrossel() {
     const slides = document.querySelectorAll('.carrossel-item');
     const indicators = document.querySelectorAll('.indicator');
 
+    // Atualizar slides sem delay para evitar piscada
     slides.forEach((slide, index) => {
         if (index === currentSlide) {
-            // Adicionar classe active com um pequeno delay para transição suave
-            setTimeout(() => {
-                slide.classList.add('active');
-            }, 50);
+            slide.classList.add('active');
         } else {
             slide.classList.remove('active');
         }
     });
 
+    // Atualizar indicadores
     indicators.forEach((indicator, index) => {
         indicator.classList.toggle('active', index === currentSlide);
     });
@@ -615,14 +614,8 @@ function addSwipeListeners() {
  * Atualiza os event listeners quando o modal é aberto
  */
 function updateModalListeners() {
-    // Remover listeners antigos se existirem
-    const oldCarrossel = document.getElementById('carrossel');
-    if (oldCarrossel) {
-        oldCarrossel.replaceWith(oldCarrossel.cloneNode(true));
-    }
-
-    // Adicionar novos listeners
-    setTimeout(addSwipeListeners, 100);
+    // Adicionar listeners diretamente sem recriar elementos
+    addSwipeListeners();
 }
 
 // ===========================================
