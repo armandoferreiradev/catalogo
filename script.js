@@ -141,10 +141,10 @@ function renderizarCatalogo() {
                 <div class="preco">R$ 16,90</div>
                 <div class="card-actions">
                     <button class="btn-ver-projetos" onclick="abrirModal(${produto.id})">
-                        👁️ Ver Projetos
+                        👁️ Ver os projetos
                     </button>
                     <button class="btn-adicionar" onclick="adicionarAoCarrinho(event, ${produto.id})">
-                        🛒 Adicionar
+                        ➕ Adicionar revista
                     </button>
                 </div>
             </div>
