@@ -107,7 +107,7 @@ function openPreview(id) {
 function addToCart(id) {
     const existing = cart.find(item => item.id === id);
     if (existing) {
-        showToast('Item já adicionado! Aumente a quantidade no carrinho.', 'warning', 'exclamation-triangle');
+        showToast('Revista já está no Carrinho!', 'warning', 'exclamation-triangle');
         return;
     }
     cart.push({ id, quantity: 1 });
@@ -116,7 +116,7 @@ function addToCart(id) {
     renderCart();
 
     const { totalItems } = calculateTotal();
-    showToast('Item adicionado ao carrinho!', 'success', 'check-circle');
+    showToast('Revista adicionada ao carrinho!', 'success', 'check-circle');
 
     // Toasts de promoção
     if (totalItems % 4 === 0) {
@@ -131,7 +131,7 @@ function removeFromCart(id) {
     saveCart();
     updateCartBadge();
     renderCart();
-    showToast('Item removido do carrinho.', 'error', 'x-circle');
+    showToast('Revista removida do carrinho.', 'error', 'x-circle');
 }
 
 function renderCart() {
