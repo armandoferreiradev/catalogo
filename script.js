@@ -1,210 +1,206 @@
-// Array de Produtos (gerado dinamicamente)
-const produtos = [];
-for (let i = 1; i <= 28; i++) {
-    const num = i.toString().padStart(2, '0');
-    produtos.push({
-        id: num,
-        nome: `Revista ${num}`,
-        preco: 16.90, // Preço único atualizado
-        imagem: `imagens/revista${num}.webp`
-    });
-}
+// =========================
+// Catálogo de Revistas
+// =========================
+const produtos = Array.from({ length: 28 }, (_, i) => ({
+  id: i + 1,
+  nome: `Revista ${String(i + 1).padStart(2, "0")}`,
+  preco: 16.90,
+  capa: `imagens/revista${String(i + 1).padStart(2, "0")}.webp`,
+  passos: [
+    `imagens/revista${String(i + 1).padStart(2, "0")}_passo01.webp`,
+    `imagens/revista${String(i + 1).padStart(2, "0")}_passo02.webp`,
+    `imagens/revista${String(i + 1).padStart(2, "0")}_passo03.webp`
+  ]
+}));
 
-// Estado do Carrinho (usando localStorage)
-let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
-// Funções Auxiliares
-function saveCart() {
-    localStorage.setItem('cart', JSON.stringify(cart));
-}
-
-function updateCartBadge() {
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    document.getElementById('cartBadge').textContent = totalItems;
-    document.getElementById('floatingCartBadge').textContent = totalItems;
-}
-
-function calculateTotal() {
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const freeItems = Math.floor(totalItems / 4);
-    const paidItems = totalItems - freeItems;
-    const totalPrice = paidItems * produtos[0].preco; // Preço único
-    return { totalItems, freeItems, totalPrice };
-}
-
-function showToast(message, type = 'success', icon = 'check-circle') {
-    const toastContainer = document.querySelector('.toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-bg-${type} border-0 show`;
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body"><i class="bi bi-${icon} me-2"></i> ${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    `;
-    toastContainer.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
+// =========================
 // Renderizar Catálogo
-function renderCatalog() {
-    const catalog = document.getElementById('catalog');
-    catalog.innerHTML = '';
-    produtos.forEach(produto => {
-        const card = document.createElement('div');
-        card.className = 'col-12 col-md-3';
-        card.innerHTML = `
-            <div class="card h-100">
-                <img src="${produto.imagem}" class="card-img-top" alt="${produto.nome}" loading="lazy" onclick="openPreview('${produto.id}')">
-                <div class="card-body text-center">
-                    <h5 class="card-title">${produto.nome}</h5>
-                    <p class="card-text"><strong>R$ ${produto.preco.toFixed(2)}</strong></p>
-                    <button class="btn btn-primary" onclick="openPreview('${produto.id}')">Ver Projetos</button>
-                    <button class="btn btn-outline-primary mt-2" onclick="addToCart('${produto.id}')">Adicionar ao Carrinho</button>
-                </div>
-            </div>
-        `;
-        catalog.appendChild(card);
-    });
+// =========================
+function renderCatalogo() {
+  const catalogo = document.getElementById("catalog");
+  catalogo.innerHTML = "";
+
+  produtos.forEach(produto => {
+    const col = document.createElement("div");
+    col.className = "col-12 col-md-3";
+
+    col.innerHTML = `
+      <div class="card h-100 border-primary">
+        <img src="${produto.capa}" class="card-img-top" alt="${produto.nome}" loading="lazy">
+        <div class="card-body text-center">
+          <h5 class="card-title">${produto.nome}</h5>
+          <p class="card-text"><strong>R$ ${produto.preco.toFixed(2).replace(".", ",")}</strong></p>
+          <button class="btn btn-primary w-100 mb-2" onclick="abrirPreview(${produto.id})">
+            Ver Projetos
+          </button>
+          <button class="btn btn-success w-100" onclick="adicionarAoCarrinho(${produto.id})">
+            Adicionar ao Carrinho
+          </button>
+        </div>
+      </div>
+    `;
+    catalogo.appendChild(col);
+  });
 }
 
-// Abrir Preview Modal com Carousel
-function openPreview(id) {
-    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
-    const carouselInner = document.querySelector('#previewCarousel .carousel-inner');
-    const carouselIndicators = document.querySelector('#previewCarousel .carousel-indicators');
-    carouselInner.innerHTML = '';
-    carouselIndicators.innerHTML = '';
+// =========================
+// Pré-visualização (Modal)
+// =========================
+function abrirPreview(id) {
+  const produto = produtos.find(p => p.id === id);
+  const carouselInner = document.querySelector("#previewCarousel .carousel-inner");
+  const carouselIndicators = document.querySelector("#previewCarousel .carousel-indicators");
 
-    const images = [
-        `imagens/revista${id}.webp`, // Capa
-        `imagens/revista${id}_passo01.webp`,
-        `imagens/revista${id}_passo02.webp`,
-        `imagens/revista${id}_passo03.webp`
-    ];
+  carouselInner.innerHTML = "";
+  carouselIndicators.innerHTML = "";
 
-    images.forEach((img, index) => {
-        const item = document.createElement('div');
-        item.className = `carousel-item ${index === 0 ? 'active' : ''}`;
-        item.innerHTML = `<img src="${img}" class="d-block w-100" alt="Slide ${index + 1}" loading="lazy">`;
-        carouselInner.appendChild(item);
+  const imagens = [produto.capa, ...produto.passos];
 
-        const indicator = document.createElement('button');
-        indicator.type = 'button';
-        indicator.dataset.bsTarget = '#previewCarousel';
-        indicator.dataset.bsSlideTo = index;
-        indicator.className = index === 0 ? 'active' : '';
-        indicator.ariaCurrent = index === 0 ? 'true' : '';
-        indicator.ariaLabel = `Slide ${index + 1}`;
-        carouselIndicators.appendChild(indicator);
-    });
+  imagens.forEach((img, index) => {
+    carouselIndicators.innerHTML += `
+      <button type="button" data-bs-target="#previewCarousel" data-bs-slide-to="${index}" 
+        ${index === 0 ? 'class="active" aria-current="true"' : ""} aria-label="Slide ${index + 1}">
+      </button>`;
 
-    document.getElementById('previewModalLabel').textContent = `Pré-Visualização: Revista ${id}`;
-    modal.show();
+    carouselInner.innerHTML += `
+      <div class="carousel-item ${index === 0 ? "active" : ""}">
+        <img src="${img}" class="d-block w-100" alt="Slide ${index + 1}">
+      </div>`;
+  });
+
+  new bootstrap.Modal(document.getElementById("previewModal")).show();
 }
 
-// Gerenciar Carrinho
-function addToCart(id) {
-    const existing = cart.find(item => item.id === id);
-    if (existing) {
-        showToast('Revista já está no Carrinho!', 'warning', 'exclamation-triangle');
-        return;
-    }
-    cart.push({ id, quantity: 1 });
-    saveCart();
-    updateCartBadge();
-    renderCart();
+// =========================
+// Carrinho
+// =========================
+function atualizarCarrinho() {
+  const cartItems = document.getElementById("cartItems");
+  const cartBadge = document.getElementById("cartBadge");
+  const floatingCartBadge = document.getElementById("floatingCartBadge");
+  const cartTotal = document.getElementById("cartTotal");
+  const promoMessage = document.getElementById("promoMessage");
 
-    const { totalItems } = calculateTotal();
-    showToast('Revista adicionada ao carrinho!', 'success', 'check-circle');
+  cartItems.innerHTML = "";
 
-    // Toasts de promoção
-    if (totalItems % 4 === 0) {
-        showToast('Parabéns! Você ganhou 1 revista grátis!', 'success', 'gift');
-    } else if (totalItems % 4 === 3) {
-        showToast('Adicione mais 1 revista para ganhar uma grátis!', 'warning', 'exclamation-triangle');
-    }
+  carrinho.forEach(item => {
+    const produto = produtos.find(p => p.id === item.id);
+    const li = document.createElement("div");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    li.innerHTML = `
+      <span>${produto.nome}</span>
+      <button class="btn btn-sm btn-outline-danger" onclick="removerDoCarrinho(${produto.id})">
+        <i class="bi bi-trash"></i>
+      </button>`;
+    cartItems.appendChild(li);
+  });
+
+  cartBadge.textContent = carrinho.length;
+  floatingCartBadge.textContent = carrinho.length;
+
+  // Promoção
+  let total = carrinho.length * 16.90;
+  let brindes = Math.floor(carrinho.length / 4);
+  let desconto = brindes * 16.90;
+  let totalFinal = total - desconto;
+
+  if (brindes > 0) {
+    promoMessage.style.display = "block";
+    promoMessage.textContent = `🎁 Promoção: Você ganhou ${brindes} revista(s) grátis!`;
+  } else if (carrinho.length === 3) {
+    promoMessage.style.display = "block";
+    promoMessage.textContent = "✨ Adicione mais 1 revista e ganhe um brinde!";
+  } else {
+    promoMessage.style.display = "none";
+  }
+
+  cartTotal.textContent = totalFinal.toFixed(2).replace(".", ",");
+  localStorage.setItem("carrinho", JSON.stringify(carrinho));
 }
 
-function removeFromCart(id) {
-    cart = cart.filter(item => item.id !== id);
-    saveCart();
-    updateCartBadge();
-    renderCart();
-    showToast('Revista removida do carrinho.', 'error', 'x-circle');
+function adicionarAoCarrinho(id) {
+  if (carrinho.some(item => item.id === id)) {
+    mostrarToast("⚠️ Essa revista já está no carrinho!", "warning");
+    return;
+  }
+  carrinho.push({ id });
+  atualizarCarrinho();
+
+  if (carrinho.length % 4 === 0) {
+    mostrarToast("🎉 Parabéns! Você ganhou uma revista grátis!", "success");
+  } else {
+    mostrarToast("✅ Revista adicionada ao carrinho!", "success");
+  }
 }
 
-function renderCart() {
-    const cartItems = document.getElementById('cartItems');
-    cartItems.innerHTML = '';
-    const { totalItems, freeItems, totalPrice } = calculateTotal();
-
-    if (cart.length === 0) {
-        cartItems.innerHTML = '<p class="text-muted">Seu carrinho está vazio.</p>';
-    } else {
-        cart.forEach(item => {
-            const produto = produtos.find(p => p.id === item.id);
-            const listItem = document.createElement('div');
-            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-            listItem.innerHTML = `
-                ${produto.nome} (Qtd: ${item.quantity})
-                <button class="btn btn-sm btn-danger" onclick="removeFromCart('${item.id}')"><i class="bi bi-trash"></i> Remover</button>
-            `;
-            cartItems.appendChild(listItem);
-        });
-    }
-
-    const promoMessage = document.getElementById('promoMessage');
-    if (freeItems > 0) {
-        promoMessage.textContent = `Promoção ativa: ${freeItems} revista(s) grátis!`;
-        promoMessage.style.display = 'block';
-    } else {
-        promoMessage.style.display = 'none';
-    }
-
-    document.getElementById('cartTotal').textContent = totalPrice.toFixed(2);
+function removerDoCarrinho(id) {
+  carrinho = carrinho.filter(item => item.id !== id);
+  atualizarCarrinho();
+  mostrarToast("🗑️ Revista removida do carrinho.", "error");
 }
 
-// Finalizar via WhatsApp
-function finalizeOrder() {
-    const { totalItems, freeItems, totalPrice } = calculateTotal();
-    if (totalItems === 0) {
-        showToast('Carrinho vazio!', 'warning', 'exclamation-triangle');
-        return;
-    }
+// =========================
+// Toasts
+// =========================
+function mostrarToast(mensagem, tipo) {
+  const container = document.querySelector(".toast-container");
+  const toast = document.createElement("div");
+  toast.className = `toast align-items-center text-dark border-0 show toast-${tipo}`;
+  toast.role = "alert";
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${mensagem}</div>
+      <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
+  container.appendChild(toast);
 
-    let message = 'Olá! Gostaria de comprar:\n';
-    cart.forEach(item => {
-        message += `- Revista ${item.id} (Qtd: ${item.quantity})\n`;
-    });
-    if (freeItems > 0) {
-        message += `\nPromoção: ${freeItems} revista(s) grátis!\n`;
-    }
-    message += `\nTotal: R$ ${totalPrice.toFixed(2)}`;
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/5512982499196?text=${encodedMessage}`, '_blank');
+  setTimeout(() => toast.remove(), 3000);
 }
 
-// Eventos
-document.addEventListener('DOMContentLoaded', () => {
-    renderCatalog();
-    updateCartBadge();
-    renderCart();
+// =========================
+// Finalizar Pedido (WhatsApp)
+// =========================
+document.getElementById("finalizeBtn").addEventListener("click", () => {
+  if (carrinho.length === 0) {
+    mostrarToast("⚠️ Seu carrinho está vazio!", "warning");
+    return;
+  }
 
-    // Abrir Offcanvas do Carrinho
-    const cartOffcanvas = new bootstrap.Offcanvas(document.getElementById('cartOffcanvas'));
-    document.getElementById('openCartBtn').addEventListener('click', () => cartOffcanvas.show());
-    document.getElementById('floatingCartBtn').addEventListener('click', () => cartOffcanvas.show());
+  let mensagem = "✨ *Olá, Ana Paula!* Quero finalizar meu pedido ✨%0A%0A";
+  mensagem += "📚 *Revistas escolhidas:*%0A";
+  carrinho.forEach(item => {
+    const produto = produtos.find(p => p.id === item.id);
+    mensagem += `- ${produto.nome}%0A`;
+  });
 
-    // Finalizar
-    document.getElementById('finalizeBtn').addEventListener('click', finalizeOrder);
+  if (carrinho.length >= 4) {
+    let brindes = Math.floor(carrinho.length / 4);
+    mensagem += `%0A🎁 *Promoção ativa:* Compre 3, leve 4! (ganhei ${brindes} brinde(s) 💕)%0A`;
+  }
 
-    // Fechar com ESC
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            bootstrap.Modal.getInstance(document.getElementById('previewModal'))?.hide();
-            cartOffcanvas.hide();
-        }
-    });
+  let total = carrinho.length * 16.90;
+  let desconto = Math.floor(carrinho.length / 4) * 16.90;
+  let totalFinal = total - desconto;
+
+  mensagem += `%0A💰 *Total:* R$ ${totalFinal.toFixed(2).replace(".", ",")}%0A%0A`;
+  mensagem += "✅ Aguardando sua confirmação!";
+
+  window.open(`https://wa.me/5512982499196?text=${mensagem}`, "_blank");
 });
+
+// =========================
+// Inicialização
+// =========================
+document.getElementById("openCartBtn").addEventListener("click", () => {
+  new bootstrap.Offcanvas(document.getElementById("cartOffcanvas")).show();
+});
+
+document.getElementById("floatingCartBtn").addEventListener("click", () => {
+  new bootstrap.Offcanvas(document.getElementById("cartOffcanvas")).show();
+});
+
+renderCatalogo();
+atualizarCarrinho();
