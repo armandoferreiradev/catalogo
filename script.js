@@ -28,7 +28,8 @@ function renderCatalogo() {
 
     col.innerHTML = `
       <div class="card h-100 border-primary">
-        <img src="${produto.capa}" class="card-img-top" alt="${produto.nome}" loading="lazy">
+        <img src="${produto.capa}" class="card-img-top" alt="${produto.nome}" 
+             loading="lazy" onclick="abrirPreview(${produto.id})">
         <div class="card-body text-center">
           <h5 class="card-title">${produto.nome}</h5>
           <p class="card-text"><strong>R$ ${produto.preco.toFixed(2).replace(".", ",")}</strong></p>
@@ -130,6 +131,8 @@ function adicionarAoCarrinho(id) {
 
   if (carrinho.length % 4 === 0) {
     mostrarToast("🎉 Parabéns! Você ganhou uma revista grátis!", "success");
+  } else if (carrinho.length === 3) {
+    mostrarToast("✨ Falta apenas 1 revista para ganhar um brinde!", "warning");
   } else {
     mostrarToast("✅ Revista adicionada ao carrinho!", "success");
   }
