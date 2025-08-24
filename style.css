@@ -1,0 +1,44 @@
+/* Reset e Globais */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa; /* Cinza claro do Bootstrap */
+}
+
+/* Cores Temáticas */
+.bg-primary { background-color: #A1C1E6 !important; } /* Azul */
+.text-primary { color: #A1C1E6 !important; }
+.border-primary { border-color: #A1C1E6 !important; }
+.btn-primary { background-color: #F48FAC; border-color: #F48FAC; } /* Rosa */
+
+/* Cards do Catálogo */
+.card-img-top {
+    aspect-ratio: 1080 / 1528; /* Proporção A4 */
+    object-fit: cover;
+    cursor: pointer; /* Indica que é clicável, sem efeitos */
+}
+
+/* Destaques com Negrito e Cores */
+.card-title {
+    font-weight: 600; /* Negrito */
+    color: #A1C1E6; /* Azul primary */
+}
+.card-text strong {
+    font-weight: 600; /* Negrito */
+    color: #F48FAC; /* Rosa para valores */
+}
+
+/* Toasts Custom */
+.toast-success { background-color: #d4edda; color: #155724; }
+.toast-error { background-color: #f8d7da; color: #721c24; }
+.toast-warning { background-color: #fff3cd; color: #856404; }
+
+/* Ajustes Mobile */
+@media (max-width: 480px) {
+    h1 { font-size: 1.5rem; }
+}
